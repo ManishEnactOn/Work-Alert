@@ -1,4 +1,5 @@
 import React from 'react';
+import { useEffect } from 'react';
 import { useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { keywordState } from '../atom';
@@ -8,8 +9,36 @@ const KeyWord = () => {
   const [rssLink, setRssLink] = useState('');
   const [keyWordList, setKeyWordList] = useRecoilState(keywordState);
 
-  const getJobs = () => {};
+  //   const getStorage = () => {
+  //     return new Promise((resolve) => {
+  //       chrome.storage.local.get('list', (result) => {
+  //         console.log(result.list);
+  //         resolve(result.list);
+  //       });
+  //     });
+  //   };
 
+  useEffect(() => {
+    chrome.storage.local.get('list', (result) => {
+      setKeyWordList(result.list);
+    });
+  }, []);
+
+  const getJobs = () => {
+    // getStorage().then((res) => setKeyWordList(res));
+    setKeyWordList((prev) => [
+      ...prev,
+      {
+        text: keyword,
+      },
+    ]);
+    setKeyword('');
+    setStorage();
+  };
+
+  const setStorage = () => {
+    chrome.storage.local.set({ list: keyWordList });
+  };
   return (
     <>
       <div className="app-container">
@@ -40,10 +69,23 @@ const KeyWord = () => {
               className="border-2 w-56 border-black h-9 px-1"
             />
           </div>
-          <button className="font-bold mt-4 " onClick={getJobs}>
+          <button
+            className="font-bold mt-4 p-1 bg-purple-300 rounded "
+            onClick={getJobs}
+          >
             Add New KeyWord
           </button>
         </div>
+        <section className="mt-1">
+          {keyWordList &&
+            keyWordList.map((list) => (
+              <div key={list.text}>
+                <div className="border">
+                  <h5 className="p-1">{list.text}</h5>
+                </div>
+              </div>
+            ))}
+        </section>
       </div>
     </>
   );
