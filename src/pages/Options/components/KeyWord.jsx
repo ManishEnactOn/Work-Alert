@@ -3,21 +3,13 @@ import { useEffect } from 'react';
 import { useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { keywordState } from '../atom';
+import { TrashIcon } from '@heroicons/react/24/solid';
 
 const KeyWord = () => {
   const [keyword, setKeyword] = useState('');
   const [rssLink, setRssLink] = useState('');
   const [keyWordList, setKeyWordList] = useRecoilState(keywordState);
-
-  //   const getStorage = () => {
-  //     return new Promise((resolve) => {
-  //       chrome.storage.local.get('list', (result) => {
-  //         console.log(result.list);
-  //         resolve(result.list);
-  //       });
-  //     });
-  //   };
-
+  const [newJobs, setNewJobs] = useState(0);
   useEffect(() => {
     chrome.storage.local.get('list', (result) => {
       setKeyWordList(result.list);
@@ -25,20 +17,28 @@ const KeyWord = () => {
   }, []);
 
   const getJobs = () => {
-    // getStorage().then((res) => setKeyWordList(res));
-    setKeyWordList((prev) => [
-      ...prev,
-      {
-        text: keyword,
-      },
-    ]);
+    var isKeywordExist = keyWordList.some(
+      (data) => data.text.toLowerCase() == keyword.toLowerCase()
+    );
+    if (!isKeywordExist)
+      setKeyWordList((prev) => [
+        ...prev,
+        {
+          id: Math.random() * 100,
+          text: keyword,
+        },
+      ]);
     setKeyword('');
-    setStorage();
   };
 
-  const setStorage = () => {
+  useEffect(() => {
     chrome.storage.local.set({ list: keyWordList });
+  }, [keyword]);
+
+  const deleteJobs = (id) => {
+    setKeyWordList(keyWordList.filter((list) => list.id !== id));
   };
+
   return (
     <>
       <div className="app-container">
@@ -79,9 +79,16 @@ const KeyWord = () => {
         <section className="mt-1">
           {keyWordList &&
             keyWordList.map((list) => (
-              <div key={list.text}>
-                <div className="border">
-                  <h5 className="p-1">{list.text}</h5>
+              <div key={list.id}>
+                <div className="border flex items-center max-w-2xl h-12">
+                  <TrashIcon
+                    className="h-6 w-6 cursor-pointer"
+                    onClick={() => deleteJobs(list.id)}
+                  />
+                  <h5 className="p-1 text-xl ">{list.text}</h5>
+                  <span className="p-2 border border-green-400 ml-10">
+                    {newJobs}
+                  </span>
                 </div>
               </div>
             ))}
