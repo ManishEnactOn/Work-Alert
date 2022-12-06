@@ -4,19 +4,35 @@ import { useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { keywordState } from '../atom';
 import { TrashIcon } from '@heroicons/react/24/solid';
+import XMLParser from 'fast-xml-parser';
+import axios from 'axios';
+import { Link } from 'react-router-dom';
+
+const parser = new XMLParser.XMLParser();
 
 const KeyWord = () => {
   const [keyword, setKeyword] = useState('');
   const [rssLink, setRssLink] = useState('');
   const [keyWordList, setKeyWordList] = useRecoilState(keywordState);
   const [newJobs, setNewJobs] = useState(0);
+
+  const getJobs = async (rssURl) => {
+    await axios
+      .get(rssURl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then((response) => {
+        const original = response.data;
+        let xmlJobList = parser.parse(original);
+        // console.log('xmlJobList', xmlJobList);
+      });
+  };
+
   useEffect(() => {
     chrome.storage.local.get('list', (result) => {
       setKeyWordList(result.list);
     });
   }, []);
 
-  const getJobs = () => {
+  const AddJobsToLocalStorage = () => {
     var isKeywordExist = keyWordList.some(
       (data) => data.text.toLowerCase() == keyword.toLowerCase()
     );
@@ -26,9 +42,12 @@ const KeyWord = () => {
         {
           id: Math.random() * 100,
           text: keyword,
+          rsslink: rssLink,
         },
       ]);
     setKeyword('');
+    getJobs(rssLink);
+    // setRssLink('');
   };
 
   useEffect(() => {
@@ -71,7 +90,7 @@ const KeyWord = () => {
           </div>
           <button
             className="font-bold mt-4 p-1 bg-purple-300 rounded "
-            onClick={getJobs}
+            onClick={AddJobsToLocalStorage}
           >
             Add New KeyWord
           </button>
@@ -85,10 +104,15 @@ const KeyWord = () => {
                     className="h-6 w-6 cursor-pointer"
                     onClick={() => deleteJobs(list.id)}
                   />
-                  <h5 className="p-1 text-xl ">{list.text}</h5>
-                  <span className="p-2 border border-green-400 ml-10">
-                    {newJobs}
-                  </span>
+                  <Link
+                    to={`/currentJobs/${list.id}`}
+                    className="flex items-center"
+                  >
+                    <h5 className="p-1 text-xl ">{list.text}</h5>
+                    <span className="p-2 border border-green-400 ml-10">
+                      {newJobs}
+                    </span>
+                  </Link>
                 </div>
               </div>
             ))}

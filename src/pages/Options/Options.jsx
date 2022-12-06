@@ -3,6 +3,7 @@ import './Options.css';
 import { Route, Routes, HashRouter } from 'react-router-dom';
 import KeyWord from './components/KeyWord';
 import { RecoilRoot } from 'recoil';
+import CurrentJobs from './components/CurrentJobs';
 const Options = () => {
   return (
     <div>
@@ -10,6 +11,7 @@ const Options = () => {
         <HashRouter>
           <Routes>
             <Route path="/" element={<KeyWord />}></Route>
+            <Route path="currentJobs/:id" element={<CurrentJobs />}></Route>
           </Routes>
         </HashRouter>
       </RecoilRoot>
