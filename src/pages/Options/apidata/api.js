@@ -113,7 +113,6 @@ export const getAllJobsData = async (keywords) => {
         console.log(error);
       });
   }
-  console.log({ filtered });
   return filtered;
 };
 

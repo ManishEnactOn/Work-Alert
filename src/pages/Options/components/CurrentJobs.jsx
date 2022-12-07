@@ -8,39 +8,18 @@ import { keywordState } from '../atom';
 import { useState } from 'react';
 import { useEffect } from 'react';
 import { BackwardIcon } from '@heroicons/react/24/solid';
+import { getJobsFromStorage } from '../utils';
 
-const parser = new XMLParser.XMLParser();
-var getRssURl;
 const CurrentJobs = () => {
-  var { id } = useParams();
-  const [currentJobs, setCurrentJobs] = useState([]);
-  const [keyWordList, setKeyWordList] = useRecoilState(keywordState);
+  const params = useParams();
 
-  //   useEffect(() => {
-  //     console.log('currentJobs', currentJobs);
-  //   }, [currentJobs]);
-
-  const getCurrentJobs = async (rssLink) => {
-    await axios
-      .get(rssLink, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-      .then((response) => {
-        const original = response?.data;
-        // console.log('original', original);
-        let xmlJobList = parser.parse(original);
-        console.log('xmlJobList', xmlJobList);
-        setCurrentJobs(xmlJobList.rss?.channel?.item);
-      });
-  };
-
-  const getCurrentRssLink = (id) => {
-    getRssURl = keyWordList.find((list) => {
-      return list.id == id;
-    });
-    getCurrentJobs(getRssURl?.rsslink);
-  };
-
+  const [jobs, setJobs] = useState([]);
   useEffect(() => {
-    getCurrentRssLink(id);
+    getJobsFromStorage().then((data) => {
+      setJobs(data.filter((a) => a.keyword === params.id));
+    });
+
+    return () => {};
   }, []);
 
   const handleHTMLcoding = (text) => {
@@ -49,28 +28,25 @@ const CurrentJobs = () => {
 
   const truncate = (string) => {
     const decodedText = handleHTMLcoding(string);
-    // console.log('decodedText', decodedText);
     return decodedText.length > 190
       ? decodedText.substring(0, 190) + ' ...'
       : decodedText;
   };
 
-  //   useEffect(() => {}, []);
   return (
     <>
       <Link to={'/'}>
         <BackwardIcon className="h-6 w-6" />
       </Link>
-      {/* <h1>currentjobs page</h1> */}
       <div className="space-y-2">
-        {currentJobs &&
-          currentJobs.map((jobs) => (
-            <>
+        {jobs &&
+          jobs.map((jobs, index) => (
+            <div key={index}>
               <div className="p-2 bg-red-300">
                 <h2 key={jobs.title}>{jobs.title.replace('- Upwork', '')}</h2>
                 <p> {truncate(jobs.description)}</p>
               </div>
-            </>
+            </div>
           ))}
       </div>
     </>

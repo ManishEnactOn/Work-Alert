@@ -7,7 +7,13 @@ import { TrashIcon } from '@heroicons/react/24/solid';
 import XMLParser from 'fast-xml-parser';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-import { fetchPreviousJobs } from '../apidata/api';
+import { fetchPreviousJobs, getAllJobsData } from '../apidata/api';
+import {
+  addKeywordToStorage,
+  getKeywordFromStorage,
+  getJobsFromStorage,
+  setJobsToStorage,
+} from '../utils';
 
 const parser = new XMLParser.XMLParser();
 
@@ -28,16 +34,33 @@ const KeyWord = () => {
   // };
 
   useEffect(() => {
-    chrome.storage.local.get('list', (result) => {
-      setKeyWordList(result.list);
+    getKeywordFromStorage().then((data) => {
+      setKeyWordList(data);
+      fetchJobs({ keywordList: data });
     });
   }, []);
+
+  // useEffect(() => {
+  //   getJobsFromStorage().then((data) => {
+  //     console.log({ jobs: data });
+  //   });
+  // });
 
   const AddJobsToLocalStorage = () => {
     var isKeywordExist = keyWordList.some(
       (data) => data.text.toLowerCase() == keyword.toLowerCase()
     );
-    if (!isKeywordExist)
+    if (!isKeywordExist) {
+      addKeywordToStorage({
+        list: [
+          ...keyWordList,
+          {
+            id: Math.random() * 100,
+            text: keyword,
+            rsslink: rssLink,
+          },
+        ],
+      });
       setKeyWordList((prev) => [
         ...prev,
         {
@@ -46,18 +69,33 @@ const KeyWord = () => {
           rsslink: rssLink,
         },
       ]);
+      fetchJobs({
+        keywordList: [
+          ...keyWordList,
+          {
+            id: Math.random() * 100,
+            text: keyword,
+            rsslink: rssLink,
+          },
+        ],
+      });
+    }
     setKeyword('');
-    // getJobs(rssLink);
     setRssLink('');
-    fetchData();
   };
 
-  useEffect(() => {
-    chrome.storage.local.set({ list: keyWordList });
-  }, [keyword, keyWordList]);
+  const fetchJobs = ({ keywordList }) => {
+    getAllJobsData(keywordList).then((data) => {
+      setJobsToStorage({ jobs: data });
+    });
+  };
 
   const deleteJobs = (id) => {
+    addKeywordToStorage({
+      list: keyWordList.filter((list) => list.id !== id),
+    });
     setKeyWordList(keyWordList.filter((list) => list.id !== id));
+    fetchJobs({ keywordList: keyWordList.filter((list) => list.id !== id) });
   };
 
   const fetchData = async () => {
@@ -116,7 +154,7 @@ const KeyWord = () => {
                   onClick={() => deleteJobs(list.id)}
                 />
                 <Link
-                  to={`/currentJobs/${list.id}`}
+                  to={`/currentJobs/${list.text}`}
                   className="flex items-center"
                 >
                   <h5 className="p-1 text-xl w-24 ">{list.text}</h5>
