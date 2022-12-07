@@ -7,6 +7,7 @@ import { TrashIcon } from '@heroicons/react/24/solid';
 import XMLParser from 'fast-xml-parser';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
+import { fetchPreviousJobs } from '../apidata/api';
 
 const parser = new XMLParser.XMLParser();
 
@@ -16,15 +17,15 @@ const KeyWord = () => {
   const [keyWordList, setKeyWordList] = useRecoilState(keywordState);
   const [newJobs, setNewJobs] = useState(0);
 
-  const getJobs = async (rssURl) => {
-    await axios
-      .get(rssURl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-      .then((response) => {
-        const original = response.data;
-        let xmlJobList = parser.parse(original);
-        // console.log('xmlJobList', xmlJobList);
-      });
-  };
+  // const getJobs = async (rssURl) => {
+  //   await axios
+  //     .get(rssURl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+  //     .then((response) => {
+  //       const original = response.data;
+  //       let xmlJobList = parser.parse(original);
+  //       // console.log('xmlJobList', xmlJobList);
+  //     });
+  // };
 
   useEffect(() => {
     chrome.storage.local.get('list', (result) => {
@@ -46,17 +47,25 @@ const KeyWord = () => {
         },
       ]);
     setKeyword('');
-    getJobs(rssLink);
-    // setRssLink('');
+    // getJobs(rssLink);
+    setRssLink('');
+    fetchData();
   };
 
   useEffect(() => {
     chrome.storage.local.set({ list: keyWordList });
-  }, [keyword]);
+  }, [keyword, keyWordList]);
 
   const deleteJobs = (id) => {
     setKeyWordList(keyWordList.filter((list) => list.id !== id));
   };
+
+  const fetchData = async () => {
+    var previousData = await fetchPreviousJobs();
+    console.log('previousData', previousData);
+  };
+
+  const numberOfJobs = (keyword) => {};
 
   return (
     <>
@@ -95,25 +104,26 @@ const KeyWord = () => {
             Add New KeyWord
           </button>
         </div>
-        <section className="mt-1">
+        <section className="mt-1 space-y-1">
           {keyWordList &&
             keyWordList.map((list) => (
-              <div key={list.id}>
-                <div className="border flex items-center max-w-2xl h-12">
-                  <TrashIcon
-                    className="h-6 w-6 cursor-pointer"
-                    onClick={() => deleteJobs(list.id)}
-                  />
-                  <Link
-                    to={`/currentJobs/${list.id}`}
-                    className="flex items-center"
-                  >
-                    <h5 className="p-1 text-xl ">{list.text}</h5>
-                    <span className="p-2 border border-green-400 ml-10">
-                      {newJobs}
-                    </span>
-                  </Link>
-                </div>
+              <div
+                key={list.id}
+                className="border flex items-center max-w-2xl h-12"
+              >
+                <TrashIcon
+                  className="h-6 w-6 cursor-pointer"
+                  onClick={() => deleteJobs(list.id)}
+                />
+                <Link
+                  to={`/currentJobs/${list.id}`}
+                  className="flex items-center"
+                >
+                  <h5 className="p-1 text-xl w-24 ">{list.text}</h5>
+                  <span className="p-2 border border-green-400 ml-10">
+                    {numberOfJobs(list.text)}
+                  </span>
+                </Link>
               </div>
             ))}
         </section>

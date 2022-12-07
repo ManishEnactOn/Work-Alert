@@ -12,7 +12,7 @@
     "128": "icon-128.png"
   },
 
-  "permissions": ["storage"],
+  "permissions": ["background", "storage", "alarms"],
 
   "content_scripts": [
     {

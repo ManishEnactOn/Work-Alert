@@ -33,7 +33,6 @@ const CurrentJobs = () => {
   };
 
   const getCurrentRssLink = (id) => {
-    // console.log('keyWordList', keyWordList, 'id', id);
     getRssURl = keyWordList.find((list) => {
       return list.id == id;
     });
@@ -50,13 +49,13 @@ const CurrentJobs = () => {
 
   const truncate = (string) => {
     const decodedText = handleHTMLcoding(string);
-    console.log('decodedText', decodedText);
+    // console.log('decodedText', decodedText);
     return decodedText.length > 190
       ? decodedText.substring(0, 190) + ' ...'
       : decodedText;
   };
 
-  useEffect(() => {}, []);
+  //   useEffect(() => {}, []);
   return (
     <>
       <Link to={'/'}>
