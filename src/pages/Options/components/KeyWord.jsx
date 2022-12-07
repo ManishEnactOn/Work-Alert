@@ -4,10 +4,8 @@ import { useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { keywordState } from '../atom';
 import { TrashIcon } from '@heroicons/react/24/solid';
-import XMLParser from 'fast-xml-parser';
-import axios from 'axios';
 import { Link } from 'react-router-dom';
-import { fetchPreviousJobs, getAllJobsData } from '../apidata/api';
+import { getAllJobsData } from '../apidata/api';
 import {
   addKeywordToStorage,
   getKeywordFromStorage,
@@ -15,36 +13,20 @@ import {
   setJobsToStorage,
 } from '../utils';
 
-const parser = new XMLParser.XMLParser();
-
 const KeyWord = () => {
   const [keyword, setKeyword] = useState('');
   const [rssLink, setRssLink] = useState('');
   const [keyWordList, setKeyWordList] = useRecoilState(keywordState);
-  const [newJobs, setNewJobs] = useState(0);
-
-  // const getJobs = async (rssURl) => {
-  //   await axios
-  //     .get(rssURl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-  //     .then((response) => {
-  //       const original = response.data;
-  //       let xmlJobList = parser.parse(original);
-  //       // console.log('xmlJobList', xmlJobList);
-  //     });
-  // };
+  const [jobs, setJobs] = useState([]);
 
   useEffect(() => {
     getKeywordFromStorage().then((data) => {
       setKeyWordList(data);
-      fetchJobs({ keywordList: data });
+      fetchJobs({ keywordList: data }).then(() => {
+        getJobsFromStorageToSet();
+      });
     });
   }, []);
-
-  // useEffect(() => {
-  //   getJobsFromStorage().then((data) => {
-  //     console.log({ jobs: data });
-  //   });
-  // });
 
   const AddJobsToLocalStorage = () => {
     var isKeywordExist = keyWordList.some(
@@ -78,6 +60,8 @@ const KeyWord = () => {
             rsslink: rssLink,
           },
         ],
+      }).then(() => {
+        getJobsFromStorageToSet();
       });
     }
     setKeyword('');
@@ -85,8 +69,13 @@ const KeyWord = () => {
   };
 
   const fetchJobs = ({ keywordList }) => {
-    getAllJobsData(keywordList).then((data) => {
-      setJobsToStorage({ jobs: data });
+    return new Promise((resolve) => {
+      getAllJobsData(keywordList).then((data) => {
+        setJobsToStorage({ jobs: data });
+        setTimeout(() => {
+          resolve();
+        }, 50);
+      });
     });
   };
 
@@ -95,15 +84,22 @@ const KeyWord = () => {
       list: keyWordList.filter((list) => list.id !== id),
     });
     setKeyWordList(keyWordList.filter((list) => list.id !== id));
-    fetchJobs({ keywordList: keyWordList.filter((list) => list.id !== id) });
+    fetchJobs({
+      keywordList: keyWordList.filter((list) => list.id !== id),
+    }).then(() => {
+      getJobsFromStorageToSet();
+    });
   };
 
-  const fetchData = async () => {
-    var previousData = await fetchPreviousJobs();
-    console.log('previousData', previousData);
+  const getJobsFromStorageToSet = () => {
+    getJobsFromStorage().then((data) => {
+      setJobs(data);
+    });
   };
 
-  const numberOfJobs = (keyword) => {};
+  const numberOfJobs = (keyword) => {
+    return jobs.filter((a) => a.keyword === keyword).length;
+  };
 
   return (
     <>
