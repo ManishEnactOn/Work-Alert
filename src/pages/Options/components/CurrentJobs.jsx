@@ -4,18 +4,24 @@ import XMLParser from 'fast-xml-parser';
 import axios from 'axios';
 import he from 'he';
 import { useRecoilState } from 'recoil';
-import { keywordState } from '../atom';
+import { jobState, keywordState } from '../atom';
 import { useState } from 'react';
 import { useEffect } from 'react';
 import { BackwardIcon } from '@heroicons/react/24/solid';
-import { getJobsFromStorage } from '../utils';
+import { getJobsFromStorage, setJobsToStorage } from '../utils';
 
 const CurrentJobs = () => {
   const params = useParams();
 
-  const [jobs, setJobs] = useState([]);
+  const [jobs, setJobs] = useRecoilState(jobState);
   useEffect(() => {
     getJobsFromStorage().then((data) => {
+      setJobsToStorage({
+        jobs: data.map((a) => {
+          if (a.keyword === params.id) a.__seen = true;
+          return a;
+        }),
+      });
       setJobs(data.filter((a) => a.keyword === params.id));
     });
 

@@ -2,7 +2,7 @@ import React from 'react';
 import { useEffect } from 'react';
 import { useState } from 'react';
 import { useRecoilState } from 'recoil';
-import { keywordState } from '../atom';
+import { jobState, keywordState } from '../atom';
 import { TrashIcon } from '@heroicons/react/24/solid';
 import { Link } from 'react-router-dom';
 import { getAllJobsData } from '../apidata/api';
@@ -17,15 +17,31 @@ const KeyWord = () => {
   const [keyword, setKeyword] = useState('');
   const [rssLink, setRssLink] = useState('');
   const [keyWordList, setKeyWordList] = useRecoilState(keywordState);
-  const [jobs, setJobs] = useState([]);
+  const [jobs, setJobs] = useRecoilState(jobState);
 
   useEffect(() => {
     getKeywordFromStorage().then((data) => {
-      setKeyWordList(data);
-      fetchJobs({ keywordList: data }).then(() => {
+      setKeyWordList(data || []);
+      fetchJobs({ keywordList: data || [] }).then(() => {
         getJobsFromStorageToSet();
       });
     });
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      getKeywordFromStorage().then((data) => {
+        setKeyWordList(data || []);
+        fetchJobs({ keywordList: data || [] }).then((count) => {
+          getJobsFromStorageToSet();
+          console.log('new jobs:', count);
+        });
+      });
+    }, 5000);
+
+    return () => {
+      clearInterval(interval);
+    };
   }, []);
 
   const AddJobsToLocalStorage = () => {
@@ -70,13 +86,35 @@ const KeyWord = () => {
 
   const fetchJobs = ({ keywordList }) => {
     return new Promise((resolve) => {
-      getAllJobsData(keywordList).then((data) => {
-        setJobsToStorage({ jobs: data });
-        setTimeout(() => {
-          resolve();
-        }, 50);
+      getJobsFromStorage().then((prev_data) => {
+        getAllJobsData(keywordList).then((data) => {
+          setJobsToStorage({
+            jobs: mergeJobs({ oldJobs: prev_data || [], incomingJobs: data }),
+          });
+          setTimeout(() => {
+            resolve(
+              mergeJobs({ oldJobs: prev_data || [], incomingJobs: data }).length
+            );
+          }, 50);
+        });
       });
     });
+  };
+
+  const mergeJobs = ({ oldJobs, incomingJobs }) => {
+    if (oldJobs !== 0) {
+      let newJobs = [
+        ...incomingJobs.filter(
+          (job) =>
+            !oldJobs.find(
+              (oldJob) => oldJob.uid + oldJob.keyword === job.uid + job.keyword
+            )
+        ),
+        ...oldJobs,
+      ];
+      return newJobs;
+    }
+    return incomingJobs;
   };
 
   const deleteJobs = (id) => {
@@ -97,8 +135,11 @@ const KeyWord = () => {
     });
   };
 
+  const toggleNumberOfJobs = (keyword) => {};
+
   const numberOfJobs = (keyword) => {
-    return jobs.filter((a) => a.keyword === keyword).length;
+    return jobs.filter((a) => a.keyword === keyword && a.__seen === false)
+      .length;
   };
 
   return (
@@ -152,6 +193,7 @@ const KeyWord = () => {
                 <Link
                   to={`/currentJobs/${list.text}`}
                   className="flex items-center"
+                  onClick={toggleNumberOfJobs(list.text)}
                 >
                   <h5 className="p-1 text-xl w-24 ">{list.text}</h5>
                   <span className="p-2 border border-green-400 ml-10">
