@@ -77,19 +77,19 @@ export const getAllJobsData = async (keywords) => {
           filtered.push({
             title: item.title.replace(' - Upwork', ''),
             link: item.link,
-            // date: new Date(
-            //   (item.description.match(/<b>Posted On<\/b>: ([^<]+)/) || [
-            //     null,
-            //     new Date().toUTCString(),
-            //   ])[1]
-            // ).toJSON(),
-            // budget: (item.description.match(/<b>Budget<\/b>: ([^<]+)/) || [
-            //   null,
-            //   null,
-            // ])[1],
-            // hourly: (item.description.match(
-            //   /<b>Hourly Range<\/b>: ([^<]+)/
-            // ) || [null, null])[1],
+            date: new Date(
+              (item.description.match(/<b>Posted On<\/b>: ([^<]+)/) || [
+                null,
+                new Date().toUTCString(),
+              ])[1]
+            ).toJSON(),
+            budget: (item.description.match(/<b>Budget<\/b>: ([^<]+)/) || [
+              null,
+              null,
+            ])[1],
+            hourly: (item.description.match(
+              /<b>Hourly Range<\/b>: ([^<]+)/
+            ) || [null, null])[1],
             description: item.description
               .replace(/< b>Posted On<\/b>: [^<]+<br \/>/, '')
               .replace(/<b>Budget<\/b>: [^<]+<br \/>/, '')

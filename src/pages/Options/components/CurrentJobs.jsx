@@ -23,6 +23,9 @@ const CurrentJobs = () => {
         }),
       });
       setJobs(data.filter((a) => a.keyword === params.id));
+      chrome.storage.local.set({
+        prevJobs: data.filter((a) => a.keyword === params.id),
+      });
     });
 
     return () => {};

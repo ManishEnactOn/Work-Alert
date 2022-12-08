@@ -92,6 +92,12 @@ const KeyWord = () => {
             jobs: mergeJobs({ oldJobs: prev_data || [], incomingJobs: data }),
           });
           setTimeout(() => {
+            chrome.storage.local.set({
+              prevJobs: mergeJobs({
+                oldJobs: prev_data || [],
+                incomingJobs: data,
+              }),
+            });
             resolve(
               mergeJobs({ oldJobs: prev_data || [], incomingJobs: data }).length
             );
