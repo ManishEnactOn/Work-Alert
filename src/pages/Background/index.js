@@ -1,77 +1,61 @@
-chrome.alarms.create({ when: 1, periodInMinutes: 0.5 });
+chrome.alarms.create({
+  when: 1,
+  periodInMinutes: 0.5,
+});
 import { getAllJobsData } from '../Options/apidata/api';
-import { getJobsFromStorage } from '../Options/utils';
 
-chrome.alarms.onAlarm.addListener(() => {
+chrome.alarms.onAlarm.addListener((data) => {
   chrome.storage.local.get(['keywordList', 'prevJobs'], (result) => {
+    console.log('prevJobs', result.prevJobs);
     if (result.keywordList) {
-      getAllJobsData(result.keywordList).then((data) => {
-        mergeJobs({
-          oldJobs: result.prevJobs || [],
-          incomingJobs: data,
-        }).then((merge) => {
-          console.log({ curr: data, prev: result.prevJobs, merge });
-          // var tmp = [...merge];
-          // console.log('tmp::', tmp);
-          const notification_count = merge.filter(
-            (a) => !a.notification_triggered
-            // && !a.__seen
-          ).length;
-          console.log({ notification_count });
+      getAllJobsData(result.keywordList).then((incomingJobs) => {
+        console.log('incomingJobs', incomingJobs);
+        var merge = mergeJobs(result.prevJobs || [], incomingJobs);
+        console.log('merge', merge);
+        var notification_count = merge.filter((a) => {
+          return a.notification_triggered == false;
+        }).length;
 
-          // console.log(
-          //   'filter::',
-          //   merge.filter((count) => {
-          //     return count.notification_triggered === false;
-          //   }).length
-          // );
-
-          if (notification_count > 0) {
-            chrome.notifications.create(
-              {
-                title: `${notification_count.toString()} new jobs have been posted 🙌`,
-                iconUrl: chrome.runtime.getURL('icon-34.png'),
-                message: 'Be first to apply! 👊',
-                type: 'basic',
-              },
-              (e) => {
-                console.log('result callback:', e);
-              }
-            );
-          }
+        console.log('notification_count', notification_count);
+        if (notification_count > 0) {
+          // console.log('notification loop');
+          chrome.notifications.create({
+            type: 'basic',
+            iconUrl: 'icon-34.png',
+            title: 'This is a notification',
+            message: `${notification_count}`,
+          });
           setTimeout(() => {
-            chrome.storage.local
-              .set({
-                prevJobs: merge.map((a) => {
-                  // if (a._seen)
-                  a.notification_triggered = true;
-                  return a;
-                }),
-              })
-              .then(() => {
-                console.log('value set');
-              });
-          }, 1000);
-        });
+            chrome.storage.local.set({
+              prevJobs: merge.map((a) => {
+                a.notification_triggered = true;
+                return a;
+              }),
+            });
+            // .then(() => {
+            //   setTimeout(() => {
+            //     chrome.storage.local.get('prevJobs', (result) => {
+            //       console.log(
+            //         'prevjobs after value set true',
+            //         result.prevJobs
+            //       );
+            //     });
+            //   }, 500);
+            // });
+          }, 500);
+        }
       });
     }
   });
 });
 
-const mergeJobs = ({ oldJobs, incomingJobs }) => {
-  return new Promise((resolve) => {
-    if (oldJobs !== 0) {
-      let newJobs = [
-        ...incomingJobs.filter(
-          (job) =>
-            !oldJobs.find(
-              (oldJob) => oldJob.uid + oldJob.keyword === job.uid + job.keyword
-            )
-        ),
-        ...oldJobs,
-      ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      resolve(newJobs);
-    }
-    resolve(incomingJobs);
-  });
+const mergeJobs = (prevJobs, newJobs) => {
+  if (prevJobs === null) {
+    return newJobs;
+  } else {
+    var totalJobs = newJobs.filter(
+      (njob) => !prevJobs.find((pjob) => njob.uid === pjob.uid)
+    );
+    return [...totalJobs, ...prevJobs];
+  }
 };
